@@ -1,0 +1,46 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:15-alpine
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: n8n_password
+      POSTGRES_DB: n8n
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    restart: always
+
+  n8n:
+    image: n8nio/n8n:latest
+    environment:
+      - DB_TYPE=postgresdb
+      - DB_POSTGRESDB_DATABASE=n8n
+      - DB_POSTGRESDB_HOST=postgres
+      - DB_POSTGRESDB_PORT=5432
+      - DB_POSTGRESDB_USER=postgres
+      - DB_POSTGRESDB_PASSWORD=n8n_password
+      - N8N_ENCRYPTION_KEY=news-automation-secret-key
+      - N8N_USER_MANAGEMENT_DISABLED=false
+    ports:
+      - "5678:5678"
+    depends_on:
+      - postgres
+    restart: always
+
+  evolution_api:
+    image: atendai/evolution-api:v1.8.2
+    environment:
+      - SERVER_URL=http://localhost:8080
+      - DOCKER_ENV=true
+      - DATABASE_ENABLED=false
+      - AUTH_TOKEN=429683C4-C791-4383-9959-5D14405F6681
+    volumes:
+      - evolution_data:/evolution/instances
+    ports:
+      - "8080:8080"
+    restart: always
+
+volumes:
+  postgres_data:
+  evolution_data:
