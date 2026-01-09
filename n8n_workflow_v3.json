@@ -1,0 +1,163 @@
+{
+    "name": "AI News Automation",
+    "nodes": [
+        {
+            "parameters": {
+                "httpMethod": "POST",
+                "path": "whatsapp-webhook",
+                "options": {}
+            },
+            "id": "webhook-node",
+            "name": "Webhook",
+            "type": "n8n-nodes-base.webhook",
+            "typeVersion": 1,
+            "position": [
+                400,
+                300
+            ]
+        },
+        {
+            "parameters": {
+                "method": "POST",
+                "url": "https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent",
+                "sendQueryParameters": true,
+                "queryParameters": {
+                    "parameters": [
+                        {
+                            "name": "key",
+                            "value": "YOUR_GEMINI_API_KEY"
+                        }
+                    ]
+                },
+                "sendBody": true,
+                "specifyBody": "json",
+                "jsonBody": "={\n  \"contents\": [{\n    \"parts\": [{\n      \"text\": \"Anda adalah jurnalis profesional. Berdasarkan pesan WhatsApp berikut: '{{ $json.body.data.message.conversation || $json.body.data.message.imageMessage.caption }}', buatlah artikel berita singkat yang menarik dalam format JSON murni: {\\\"title\\\": \\\"...\\\", \\\"content\\\": \\\"...\\\", \\\"category\\\": \\\"...\\\", \\\"author\\\": \\\"AI Reporter\\\"}\"\n    }]\n  }]\n}",
+                "options": {}
+            },
+            "id": "ai-node-manual",
+            "name": "AI News Generator (Manual)",
+            "type": "n8n-nodes-base.httpRequest",
+            "typeVersion": 4.1,
+            "position": [
+                600,
+                300
+            ]
+        },
+        {
+            "parameters": {
+                "method": "POST",
+                "url": "http://host.docker.internal:3001/api/news",
+                "sendBody": true,
+                "bodyParameters": {
+                    "parameters": [
+                        {
+                            "name": "title",
+                            "value": "={{ JSON.parse($json.candidates[0].content.parts[0].text).title }}"
+                        },
+                        {
+                            "name": "content",
+                            "value": "={{ JSON.parse($json.candidates[0].content.parts[0].text).content }}"
+                        },
+                        {
+                            "name": "category",
+                            "value": "={{ JSON.parse($json.candidates[0].content.parts[0].text).category }}"
+                        },
+                        {
+                            "name": "author",
+                            "value": "={{ JSON.parse($json.candidates[0].content.parts[0].text).author }}"
+                        }
+                    ]
+                },
+                "options": {}
+            },
+            "id": "post-node",
+            "name": "Post to Portal",
+            "type": "n8n-nodes-base.httpRequest",
+            "typeVersion": 4.1,
+            "position": [
+                850,
+                300
+            ]
+        },
+        {
+            "parameters": {
+                "method": "POST",
+                "url": "http://evolution_api:8080/instance/create",
+                "sendHeaders": true,
+                "headerParameters": {
+                    "parameters": [
+                        {
+                            "name": "apikey",
+                            "value": "429683C4-C791-4383-9959-5D14405F6681"
+                        }
+                    ]
+                },
+                "sendBody": true,
+                "bodyParameters": {
+                    "parameters": [
+                        {
+                            "name": "instanceName",
+                            "value": "news-bot"
+                        }
+                    ]
+                },
+                "options": {}
+            },
+            "id": "create-instance-node",
+            "name": "1. Create WhatsApp Instance",
+            "type": "n8n-nodes-base.httpRequest",
+            "typeVersion": 4.1,
+            "position": [
+                100,
+                100
+            ]
+        },
+        {
+            "parameters": {
+                "url": "http://evolution_api:8080/instance/connect/news-bot",
+                "sendHeaders": true,
+                "headerParameters": {
+                    "parameters": [
+                        {
+                            "name": "apikey",
+                            "value": "429683C4-C791-4383-9959-5D14405F6681"
+                        }
+                    ]
+                },
+                "options": {}
+            },
+            "id": "get-qr-node",
+            "name": "2. Get QR Code",
+            "type": "n8n-nodes-base.httpRequest",
+            "typeVersion": 4.1,
+            "position": [
+                300,
+                100
+            ]
+        }
+    ],
+    "connections": {
+        "Webhook": {
+            "main": [
+                [
+                    {
+                        "node": "AI News Generator (Manual)",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "AI News Generator (Manual)": {
+            "main": [
+                [
+                    {
+                        "node": "Post to Portal",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        }
+    }
+}

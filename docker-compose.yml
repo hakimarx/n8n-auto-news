@@ -35,6 +35,8 @@ services:
       - DOCKER_ENV=true
       - DATABASE_ENABLED=false
       - AUTH_TOKEN=429683C4-C791-4383-9959-5D14405F6681
+      - AUTHENTICATION_TYPE=apikey
+      - AUTHENTICATION_API_KEY=429683C4-C791-4383-9959-5D14405F6681
     volumes:
       - evolution_data:/evolution/instances
     ports:
